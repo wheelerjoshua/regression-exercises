@@ -3,6 +3,7 @@ import numpy as np
 import os
 from env import host, user, password
 from sklearn.model_selection import train_test_split
+import sklearn.preprocessing
 
 
 ############# Acquire #############
@@ -53,9 +54,6 @@ def get_zillow_data():
     return df
 
 
-
-
-
 ############# Prepare #############
 
 ### Remove outliers
@@ -102,7 +100,6 @@ def prepare(df):
 
 
 ############# Split #############
-
 def split_zillow(df):
     '''
     Takes in a zillow dataframe and returns train, validate, test subset dataframes. 
@@ -112,7 +109,7 @@ def split_zillow(df):
     return train, validate, test
 
 
-############# Split #############
+############# Wrangle #############
 def wrangle_zillow():
     '''
     Combines all previously defined functions in the module to return
@@ -121,4 +118,23 @@ def wrangle_zillow():
     df = get_zillow_data()
     df = prepare(df)
     train, validate, test = split_zillow(df)
+    return train, validate, test
+
+
+############# Scaling #############
+def scale_zillow(train, validate, test):
+    '''
+    Takes train, validate, test datasets as an argument and returns the dataframes with
+    taxamount, taxvaluedollarcnt, and calculatedfinishedsquarefeet scaled columns.
+    '''
+    ## MinMaxScaler
+    scaler = sklearn.preprocessing.MinMaxScaler()
+
+    # Fit scaler to data
+    scaler.fit(train[['taxamount', 'taxvaluedollarcnt', 'calculatedfinishedsquarefeet']])
+
+    # Execute scaling
+    train[['calculatedfinishedsquarefeet_scaled', 'taxvaluedollarcnt_scaled', 'taxamount_scaled']] = scaler.transform(train[['calculatedfinishedsquarefeet', 'taxvaluedollarcnt', 'taxamount']])
+    validate[['calculatedfinishedsquarefeet_scaled', 'taxvaluedollarcnt_scaled', 'taxamount_scaled']] = scaler.transform(validate[['calculatedfinishedsquarefeet', 'taxvaluedollarcnt', 'taxamount']])
+    test[['calculatedfinishedsquarefeet_scaled', 'taxvaluedollarcnt_scaled', 'taxamount_scaled']] = scaler.transform(test[['calculatedfinishedsquarefeet', 'taxvaluedollarcnt', 'taxamount']])
     return train, validate, test
