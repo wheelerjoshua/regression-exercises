@@ -52,6 +52,10 @@ def get_zillow_data():
         
     return df
 
+
+
+
+
 ############# Prepare #############
 
 ### Remove outliers
@@ -94,12 +98,27 @@ def prepare(df):
 
     return df
 
+
+
+
 ############# Split #############
 
 def split_zillow(df):
     '''
     Takes in a zillow dataframe and returns train, validate, test subset dataframes. 
     '''
-    train, test = train_test_split(df, test_size = .2, stratify = df.taxamount, random_state = 123)
-    train, validate = train_test_split(train, test_size = .3, stratify = train.taxamount, random_state = 123)
+    train, test = train_test_split(df, test_size = .2, random_state = 123)
+    train, validate = train_test_split(train, test_size = .3, random_state = 123)
+    return train, validate, test
+
+
+############# Split #############
+def wrangle_zillow():
+    '''
+    Combines all previously defined functions in the module to return
+    train, validate, and test datasets.
+    '''
+    df = get_zillow_data()
+    df = prepare(df)
+    train, validate, test = split_zillow(df)
     return train, validate, test
