@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
+import math
 from scipy import stats
 from sklearn.metrics import mean_squared_error, r2_score, explained_variance_score
 from math import sqrt
@@ -8,55 +9,75 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
-def plot_residuals(df, y, yhat):
+def plot_residuals(actual, predicted):
     '''
-    Takes in y and yhat to return a plot of residuals
+    Takes in actual and predicted arguments to return a plot of residuals
     '''
+    residuals = actual - predicted
     plt.figure(figsize=(10,10))
     plt.axhline(color = 'green')
-    plt.scatter(df[y], df[yhat], data = df)
-    plt.xlabel(f'{y}')
-    plt.ylabel(r'$\hat{y}-y$')
+    plt.scatter(actual, residuals)
+    plt.xlabel('actual ($y$)')
+    plt.ylabel(r'residual ($\hat{y}-y$)')
     plt.title('Model Residuals')
     return plt.show()
 
-def regression_errors(y, yhat):
+#### Regression errors functions
+
+def residuals(actual, predicted):
+    return actual - predicted
+
+def sse(actual, predicted):
+    return (residuals(actual, predicted) **2).sum()
+
+def mse(actual, predicted):
+    n = actual.shape[0]
+    return sse(actual, predicted) / n
+
+def rmse(actual, predicted):
+    return math.sqrt(mse(actual, predicted))
+
+def ess(actual, predicted):
+    return ((predicted - actual.mean()) ** 2).sum()
+
+def tss(actual):
+    return ((actual - actual.mean()) ** 2).sum()
+
+def r2_score(actual, predicted):
+    return ess(actual, predicted) / tss(actual)
+
+def regression_errors(actual, predicted):
     '''
-    Takes y and yhat as arguments and returns the Sum of Squared Errors, 
+    Takes actual and predicted as arguments and returns the Sum of Squared Errors, 
     Explained Sum of Squares, Total Sum of Squares, Mean Squared Error
     and Root Mean Squared Error
     '''
-    # sum of squares error
-    SSE = mean_squared_error(y, yhat)*len(y)
-    # explained sum of squares
-    ESS = sum((yhat - y.mean())**2)
-    # mean squared error
-    MSE = mean_squared_error(y, yhat)
-    # root mean squared error
-    RMSE = sqrt(mean_squared_error(y, yhat))
-    return SSE, ESS, MSE, RMSE
+    return pd.Series({
+        'sse': sse(actual, predicted),
+        'ess': ess(actual, predicted),
+        'tss': tss(actual),
+        'mse': mse(actual, predicted),
+        'rmse': rmse(actual, predicted),
+    })
 
-def baseline_mean_errors(y):
+
+def baseline_mean_errors(actual):
     '''
-    Takes y as an argument and returns the baseline Sum of Squared Errors,
+    Takes actual as an argument and returns the baseline Sum of Squared Errors,
     Total Sum of Squares, Mean Squared Error, and Root Mean Squared Error.
     '''
-    # SSE baseline
-    SSE_baseline = mean_squared_error(y, [[y.mean()]])* len(y)
-    # MSE baseline
-    MSE_baseline = mean_squared_error(y, y.mean())
-    # RMSE baseline
-    RMSE_baseline = sqrt(mean_squared_error(y, y.mean()))
-    return SSE_baseline, MSE_baseline, RMSE_baseline
+    predicted = actual.mean()
+    return {
+        'sse': sse(actual, predicted),
+        'mse': mse(actual, predicted),
+        'rmse': rmse(actual, predicted),
+    }
 
-def better_than_baseline(y, yhat):
+def better_than_baseline(actual, predicted):
     '''
-    Takes y and yhat as arguments, returning True if the model performs better 
-    than the baseline. Evaluates the model's Sum of Squared Errors, 
-    Total Sum of Squares, Mean Squared Error, and Root Mean Squared Error 
-    against those of the baseline.
+    Takes actual and predicted as arguments, returning True if the model performs better 
+    than the baseline. Evaluates the model's RMSE.
     '''
-    SSE, ESS, MSE, RMSE = regression_errors(y, yhat)
-    SSE_baseline, MSE_baseline, RMSE_baseline = baseline_mean_errors(y)
-    if [SSE, MSE, RMSE] < [SSE_baseline, MSE_baseline, RMSE_baseline]:
-        return True
+    rmse_baseline = rmse(actual, actual.mean())
+    rmse_model = rmse(actual, predicted)
+    return rmse_model < rmse_baseline
